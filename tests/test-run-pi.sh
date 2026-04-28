@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016
 # Unit tests for scripts/run-pi.sh.
 # Uses tests/stubs/{pi,gh} via a temp PATH prefix. No real pi or network needed.
 

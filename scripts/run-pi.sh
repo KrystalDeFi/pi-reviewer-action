@@ -11,6 +11,7 @@ set -euo pipefail
 SESSION_DIR="${RUNNER_TEMP:-/tmp}/pi-reviewer-session"
 mkdir -p "$SESSION_DIR"
 
+# shellcheck disable=SC2054
 PI_ARGS=(
   --print
   --provider "$PI_PROVIDER"
@@ -41,6 +42,7 @@ printf '%s' "$PI_PROMPT" | pi "${PI_ARGS[@]}"
 EXIT_CODE=$?
 set -e
 
+# shellcheck disable=SC2012
 LATEST_SESSION="$(ls -1t "$SESSION_DIR"/*.jsonl 2>/dev/null | head -n1 || true)"
 
 if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
