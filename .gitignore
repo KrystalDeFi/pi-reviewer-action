@@ -1,0 +1,21 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/
+*.swp
+
+# Node
+node_modules/
+
+# Pi runtime
+.pi/
+*-session.jsonl
+
+# Local pi-mono reference clone — not part of the action source
+assets/
+
+# Test artifacts
+tests/.tmp/
