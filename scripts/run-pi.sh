@@ -7,6 +7,7 @@ set -euo pipefail
 : "${PI_THINKING:=medium}"
 : "${PI_APPEND_SYSTEM_PROMPT:=}"
 : "${GH_TOKEN:?GH_TOKEN is required}"
+: "${PI_TIMEOUT_MINUTES:=15}"
 
 SESSION_DIR="${RUNNER_TEMP:-/tmp}/pi-reviewer-session"
 mkdir -p "$SESSION_DIR"
@@ -38,7 +39,7 @@ echo "tools:    bash,read,grep,find,ls"
 echo "::endgroup::"
 
 set +e
-printf '%s' "$PI_PROMPT" | pi "${PI_ARGS[@]}"
+printf '%s' "$PI_PROMPT" | timeout "${PI_TIMEOUT_MINUTES}m" pi "${PI_ARGS[@]}"
 EXIT_CODE=$?
 set -e
 
