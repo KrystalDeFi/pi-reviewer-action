@@ -810,7 +810,6 @@ runs:
       id: run
       shell: bash
       working-directory: ${{ inputs.working_directory }}
-      timeout-minutes: ${{ fromJSON(inputs.timeout_minutes) }}
       env:
         GH_TOKEN: ${{ inputs.github_token }}
         PI_PROMPT: ${{ inputs.prompt }}
@@ -818,6 +817,7 @@ runs:
         PI_PROVIDER: ${{ inputs.provider }}
         PI_THINKING: ${{ inputs.thinking }}
         PI_APPEND_SYSTEM_PROMPT: ${{ inputs.append_system_prompt }}
+        PI_TIMEOUT_MINUTES: ${{ inputs.timeout_minutes }}
       run: ${{ github.action_path }}/scripts/run-pi.sh
 
     - name: Upload session log
@@ -1215,7 +1215,7 @@ More examples in [`examples/`](./examples).
 | `pi_version` | no | `0.70.5` | npm version of `@mariozechner/pi-coding-agent`. |
 | `github_token` | no | `${{ github.token }}` | Token forwarded to `gh` CLI as `GH_TOKEN`. |
 | `working_directory` | no | `${{ github.workspace }}` | Where pi runs. |
-| `timeout_minutes` | no | `15` | Hard cap on the pi step. |
+| `timeout_minutes` | no | `15` | Hard cap: forwarded as `PI_TIMEOUT_MINUTES` and applied via `timeout` in `run-pi.sh`. |
 | `append_system_prompt` | no | `""` | Extra system instructions (e.g. team review rubric). |
 
 ## Outputs
