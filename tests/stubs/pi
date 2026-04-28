@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Test stub for `pi`. Records argv and stdin, then exits with PI_STUB_EXIT_CODE
+# (default 0). Optionally writes a fake session JSONL to the --session-dir arg
+# so run-pi.sh can find it.
+
+set -euo pipefail
+
+: "${PI_STUB_RECORD_DIR:?PI_STUB_RECORD_DIR is required by the test}"
+
+mkdir -p "$PI_STUB_RECORD_DIR"
+
+# Record argv, one arg per line.
+printf '%s\n' "$@" > "$PI_STUB_RECORD_DIR/argv"
+
+# Record stdin verbatim.
+cat > "$PI_STUB_RECORD_DIR/stdin"
+
+# If a session dir was passed via --session-dir, drop a fake session file
+# so run-pi.sh's "find latest session" logic has something to find.
+SESSION_DIR=""
+prev=""
+for arg in "$@"; do
+  if [[ "$prev" == "--session-dir" ]]; then
+    SESSION_DIR="$arg"
+    break
+  fi
+  prev="$arg"
+done
+
+if [[ -n "$SESSION_DIR" ]]; then
+  mkdir -p "$SESSION_DIR"
+  printf '{"stub":true}\n' > "$SESSION_DIR/session-stub.jsonl"
+fi
+
+exit "${PI_STUB_EXIT_CODE:-0}"

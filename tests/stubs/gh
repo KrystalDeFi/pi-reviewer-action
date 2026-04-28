@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# No-op stub for `gh`. Always exits 0, prints version on `gh --version`.
+
+if [[ "${1:-}" == "--version" ]]; then
+  echo "gh version 0.0.0-stub"
+  exit 0
+fi
+
+exit 0
