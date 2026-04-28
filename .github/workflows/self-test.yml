@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   self-test:
-    runs-on: ubuntu-latest
+    runs-on: [arc-kyrd-runner, size-m]
     if: github.event.pull_request.head.repo.full_name == github.repository  # skip forks (no secret access)
     steps:
       - uses: actions/checkout@v4

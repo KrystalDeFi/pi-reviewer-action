@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   shellcheck:
-    runs-on: ubuntu-latest
+    runs-on: [arc-kyrd-runner, size-m]
     steps:
       - uses: actions/checkout@v4
       - name: Run shellcheck
@@ -20,7 +20,7 @@ jobs:
           shellcheck scripts/run-pi.sh tests/test-run-pi.sh tests/stubs/pi tests/stubs/gh
 
   actionlint:
-    runs-on: ubuntu-latest
+    runs-on: [arc-kyrd-runner, size-m]
     steps:
       - uses: actions/checkout@v4
       - name: Run actionlint
@@ -29,7 +29,7 @@ jobs:
           ./actionlint -color
 
   test-run-pi:
-    runs-on: ubuntu-latest
+    runs-on: [arc-kyrd-runner, size-m]
     steps:
       - uses: actions/checkout@v4
       - name: Run unit tests
