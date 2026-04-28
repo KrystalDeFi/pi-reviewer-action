@@ -74,7 +74,15 @@ runs:
       shell: bash
       run: npm install -g "@mariozechner/pi-coding-agent@${{ inputs.pi_version }}"
 
+    - name: Cache gh CLI
+      id: cache-gh
+      uses: actions/cache@v4
+      with:
+        path: /usr/local/bin/gh
+        key: gh-cli-${{ runner.os }}
+
     - name: Install gh CLI
+      if: steps.cache-gh.outputs.cache-hit != 'true'
       shell: bash
       run: |
         if ! command -v gh &>/dev/null; then
