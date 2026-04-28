@@ -1,0 +1,33 @@
+# Variant: only review PRs that touch src/** or contracts/**.
+
+name: pi review (filtered)
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+    paths:
+      - 'src/**'
+      - 'contracts/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pi reviewer
+        uses: KrystalDeFi/pi-reviewer-action@v1
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_REVIEWER_API_KEY }}
+        with:
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+            Review only files under src/** and contracts/**. Use gh to fetch the diff. Post inline comments for issues.
+          model: xiaomi/mimo-v2.5-pro
+          thinking: high

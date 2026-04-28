@@ -1,0 +1,41 @@
+# Canonical pi-reviewer-action usage. Copy this into
+# .github/workflows/pr-review.yml in your repo and set the OPENROUTER_REVIEWER_API_KEY secret.
+
+name: pi review
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pi reviewer
+        id: review
+        uses: KrystalDeFi/pi-reviewer-action@v1
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_REVIEWER_API_KEY }}
+        with:
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Please review this pull request with a focus on:
+            - Code quality and best practices
+            - Potential bugs or issues
+            - Security implications
+            - Performance considerations
+
+            Be concise and actionable.
+
+            Provide detailed feedback using inline comments for specific issues.
+            Avoid adding inline comments for issues that have already been addressed or are currently under discussion.
+          model: xiaomi/mimo-v2.5-pro
