@@ -120,7 +120,6 @@ runs:
       id: run
       shell: bash
       working-directory: ${{ inputs.working_directory }}
-      timeout-minutes: ${{ fromJSON(inputs.timeout_minutes) }}
       env:
         GH_TOKEN: ${{ inputs.github_token }}
         PI_PROMPT: ${{ inputs.prompt }}
@@ -128,6 +127,7 @@ runs:
         PI_PROVIDER: ${{ inputs.provider }}
         PI_THINKING: ${{ inputs.thinking }}
         PI_APPEND_SYSTEM_PROMPT: ${{ inputs.append_system_prompt }}
+        PI_TIMEOUT_MINUTES: ${{ inputs.timeout_minutes }}
       run: ${{ github.action_path }}/scripts/run-pi.sh
 
     - name: Upload session log
@@ -143,7 +143,7 @@ runs:
 
 - **`*_API_KEY` envs are inherited from the caller** (e.g. `OPENROUTER_API_KEY`) — composite actions inherit parent `env:` unless shadowed. We do not declare them here.
 - **`GH_TOKEN`** is set explicitly so `gh` works inside pi's bash tool without `gh auth login`.
-- **`fromJSON(inputs.timeout_minutes)`** coerces the string input to a number for the `timeout-minutes` field, which requires a number.
+- **`PI_TIMEOUT_MINUTES`** is forwarded to `run-pi.sh`, which wraps the pi call with `timeout "${PI_TIMEOUT_MINUTES}m"`. (`timeout-minutes` is not valid on composite action steps.)
 - **Session log artifact** uses `if: always()` so it uploads on success, failure, and timeout. `if-no-files-found: ignore` makes it a no-op if pi crashed before writing anything.
 
 ## 5. scripts/run-pi.sh
@@ -315,7 +315,7 @@ The README documents this matrix.
 | Network flake during install | `npm install -g` | Fails. setup-node's npm cache reduces blast radius. No retry inside the action. |
 | Model error / rate limit | Pi's provider client | Pi exits non-zero. Stdout shows provider error. |
 | `gh pr review` fails (permissions) | Pi's bash tool surfaces stderr | Model sees failure and may retry or give up. Step exit reflects pi's final state. |
-| Step exceeds `timeout_minutes` | GHA `timeout-minutes` | Step is killed. Session log artifact still uploaded by `if: always()` upload step. |
+| Step exceeds `timeout_minutes` | `timeout` command in `run-pi.sh` (exits 124) | Pi is killed. Session log artifact still uploaded by `if: always()` upload step. |
 | Pi crashes mid-session | `run-pi.sh` exit-code capture | `exit_code` and `session_log` outputs still written; artifact still uploaded. |
 
 **Principle:** the action does not swallow errors or retry. Workflow authors compose retry / notification logic in their workflow, not inside the action.
