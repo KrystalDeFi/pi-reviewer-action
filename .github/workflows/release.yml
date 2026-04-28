@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   release:
-    runs-on: [arc-kyrd-runner, size-m]
+    runs-on: [ubuntu-latest]
     steps:
       - uses: actions/checkout@v4
         with:
