@@ -41,4 +41,13 @@ printf '%s' "$PI_PROMPT" | pi "${PI_ARGS[@]}"
 EXIT_CODE=$?
 set -e
 
+LATEST_SESSION="$(ls -1t "$SESSION_DIR"/*.jsonl 2>/dev/null | head -n1 || true)"
+
+if [[ -n "${GITHUB_OUTPUT:-}" ]]; then
+  {
+    echo "exit_code=$EXIT_CODE"
+    echo "session_log=${LATEST_SESSION:-}"
+  } >> "$GITHUB_OUTPUT"
+fi
+
 exit "$EXIT_CODE"
