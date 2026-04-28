@@ -1,0 +1,52 @@
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Semver tag to create (e.g. v1.0.0)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate input
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Version must match vMAJOR.MINOR.PATCH (got: $VERSION)" >&2
+            exit 1
+          fi
+
+      - name: Configure git
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+      - name: Tag release
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          MAJOR="${VERSION%%.*}"   # e.g. v1
+          git tag -a "$VERSION" -m "Release $VERSION"
+          git tag -f "$MAJOR" "$VERSION"
+          git push origin "$VERSION"
+          git push origin -f "$MAJOR"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          gh release create "$VERSION" \
+            --title "$VERSION" \
+            --generate-notes
