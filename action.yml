@@ -1,0 +1,88 @@
+name: 'Pi Reviewer'
+description: 'Run a pi-mono coding agent against a PR for review'
+branding:
+  icon: 'message-circle'
+  color: 'purple'
+
+inputs:
+  prompt:
+    description: 'Instructions for the model'
+    required: true
+  model:
+    description: 'Model ID (e.g. xiaomi/mimo-v2.5-pro). Supports provider/id syntax.'
+    required: true
+  provider:
+    description: 'Pi provider name (openrouter, anthropic, openai, ...)'
+    required: false
+    default: 'openrouter'
+  thinking:
+    description: 'Thinking level: off, minimal, low, medium, high, xhigh'
+    required: false
+    default: 'medium'
+  pi_version:
+    description: 'npm version of @mariozechner/pi-coding-agent to install'
+    required: false
+    default: '0.70.5'
+  github_token:
+    description: 'Token used for the gh CLI inside pi (defaults to github.token)'
+    required: false
+    default: ${{ github.token }}
+  working_directory:
+    description: 'Where pi runs (defaults to github.workspace)'
+    required: false
+    default: ${{ github.workspace }}
+  timeout_minutes:
+    description: 'Hard cap on the pi step in minutes'
+    required: false
+    default: '15'
+  append_system_prompt:
+    description: 'Extra system instructions appended to pi defaults'
+    required: false
+    default: ''
+
+outputs:
+  exit_code:
+    description: "Pi's exit code"
+    value: ${{ steps.run.outputs.exit_code }}
+  session_log:
+    description: "Path to pi's session JSONL (also uploaded as artifact)"
+    value: ${{ steps.run.outputs.session_log }}
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install pi
+      shell: bash
+      run: npm install -g "@mariozechner/pi-coding-agent@${{ inputs.pi_version }}"
+
+    - name: Verify gh CLI
+      shell: bash
+      run: gh --version
+
+    - name: Run pi
+      id: run
+      shell: bash
+      working-directory: ${{ inputs.working_directory }}
+      timeout-minutes: ${{ fromJSON(inputs.timeout_minutes) }}
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+        PI_PROMPT: ${{ inputs.prompt }}
+        PI_MODEL: ${{ inputs.model }}
+        PI_PROVIDER: ${{ inputs.provider }}
+        PI_THINKING: ${{ inputs.thinking }}
+        PI_APPEND_SYSTEM_PROMPT: ${{ inputs.append_system_prompt }}
+      run: ${{ github.action_path }}/scripts/run-pi.sh
+
+    - name: Upload session log
+      if: always() && steps.run.outputs.session_log != ''
+      uses: actions/upload-artifact@v4
+      with:
+        name: pi-reviewer-session-${{ github.run_id }}-${{ github.run_attempt }}
+        path: ${{ steps.run.outputs.session_log }}
+        if-no-files-found: ignore
