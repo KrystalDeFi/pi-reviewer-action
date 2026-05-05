@@ -8,7 +8,7 @@ set -euo pipefail
 : "${PI_APPEND_SYSTEM_PROMPT:=}"
 : "${GH_TOKEN:?GH_TOKEN is required}"
 : "${PI_TIMEOUT_MINUTES:=15}"
-: "${PI_VERBOSE:=true}"
+: "${PI_VERBOSE:=false}"
 
 SESSION_DIR="${RUNNER_TEMP:-/tmp}/pi-reviewer-session"
 mkdir -p "$SESSION_DIR"

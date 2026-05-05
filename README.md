@@ -49,7 +49,7 @@ More examples in [`examples/`](./examples).
 | `working_directory` | no | `${{ github.workspace }}` | Where pi runs. |
 | `timeout_minutes` | no | `15` | Hard cap on the pi step. |
 | `append_system_prompt` | no | `""` | Extra system instructions (e.g. team review rubric). |
-| `verbose` | no | `true` | Pass `--verbose` to pi to show startup and debug output in the step logs. |
+| `verbose` | no | `false` | Pass `--verbose` to pi to show startup and debug output in the step logs. |
 
 ## Outputs
 

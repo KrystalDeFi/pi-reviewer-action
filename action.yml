@@ -42,7 +42,7 @@ inputs:
   verbose:
     description: 'Pass --verbose to pi to show startup and debug output'
     required: false
-    default: 'true'
+    default: 'false'
 
 outputs:
   exit_code:
@@ -58,7 +58,7 @@ runs:
     - name: Setup Node
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '24'
 
     - name: Cache pi install
       id: cache-pi
