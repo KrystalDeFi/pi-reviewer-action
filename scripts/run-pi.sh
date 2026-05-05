@@ -8,6 +8,7 @@ set -euo pipefail
 : "${PI_APPEND_SYSTEM_PROMPT:=}"
 : "${GH_TOKEN:?GH_TOKEN is required}"
 : "${PI_TIMEOUT_MINUTES:=15}"
+: "${PI_VERBOSE:=true}"
 
 SESSION_DIR="${RUNNER_TEMP:-/tmp}/pi-reviewer-session"
 mkdir -p "$SESSION_DIR"
@@ -29,6 +30,10 @@ PI_ARGS=(
 
 if [[ -n "$PI_APPEND_SYSTEM_PROMPT" ]]; then
   PI_ARGS+=(--append-system-prompt "$PI_APPEND_SYSTEM_PROMPT")
+fi
+
+if [[ "$PI_VERBOSE" == "true" ]]; then
+  PI_ARGS+=(--verbose)
 fi
 
 echo "::group::pi invocation"
