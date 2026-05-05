@@ -111,6 +111,67 @@ runs:
         PI_VERBOSE: ${{ inputs.verbose }}
       run: ${{ github.action_path }}/scripts/run-pi.sh
 
+    - name: Print session log
+      if: always() && steps.run.outputs.session_log != ''
+      shell: python3 {0}
+      env:
+        SESSION_LOG: ${{ steps.run.outputs.session_log }}
+      run: |
+        import json, os, textwrap
+
+        path = os.environ["SESSION_LOG"]
+        try:
+            lines = open(path).readlines()
+        except OSError as e:
+            print(f"Could not open session log: {e}")
+            raise SystemExit(1)
+
+        def text_of(content):
+            if isinstance(content, str):
+                return content
+            parts = []
+            for block in content:
+                t = block.get("type", "")
+                if t == "text":
+                    parts.append(block.get("text", ""))
+                elif t == "thinking":
+                    parts.append(f"<thinking>\n{block.get('thinking', '')}\n</thinking>")
+                elif t == "tool_use":
+                    inp = json.dumps(block.get("input", {}), indent=2)
+                    parts.append(f"[tool_use:{block.get('name','')}]\n{inp}")
+                elif t == "tool_result":
+                    result_content = block.get("content", "")
+                    if isinstance(result_content, list):
+                        result_content = "\n".join(c.get("text","") for c in result_content if c.get("type")=="text")
+                    parts.append(f"[tool_result]\n{result_content}")
+            return "\n".join(parts)
+
+        turn = 0
+        for raw in lines:
+            raw = raw.strip()
+            if not raw:
+                continue
+            try:
+                entry = json.loads(raw)
+            except json.JSONDecodeError:
+                continue
+            if entry.get("type") != "message":
+                continue
+            msg = entry.get("message", {})
+            role = msg.get("role", "")
+            if role not in ("user", "assistant"):
+                continue
+            body = text_of(msg.get("content", ""))
+            if not body.strip():
+                continue
+            if role == "assistant":
+                turn += 1
+                print(f"::group::turn {turn} — assistant")
+            else:
+                print(f"::group::turn {turn} — user (tool results)")
+            print(body)
+            print("::endgroup::")
+
     - name: Upload session log
       if: always() && steps.run.outputs.session_log != ''
       uses: actions/upload-artifact@v4

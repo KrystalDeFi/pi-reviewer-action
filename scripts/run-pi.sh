@@ -41,6 +41,7 @@ echo "model:    $PI_MODEL"
 echo "provider: $PI_PROVIDER"
 echo "thinking: $PI_THINKING"
 echo "tools:    bash,read,grep,find,ls"
+echo "verbose:  $PI_VERBOSE"
 echo "::endgroup::"
 
 set +e
