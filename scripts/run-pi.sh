@@ -16,6 +16,7 @@ mkdir -p "$SESSION_DIR"
 # shellcheck disable=SC2054
 PI_ARGS=(
   --print
+  --mode json
   --provider "$PI_PROVIDER"
   --model "$PI_MODEL"
   --thinking "$PI_THINKING"
@@ -47,6 +48,22 @@ PI_MAX_RETRIES="${PI_MAX_RETRIES:-2}"
 ATTEMPT=0
 EXIT_CODE=1
 
+# Extract the last error from the most recent session JSONL and print it as a
+# GitHub Actions warning so the failure reason is visible in the runner log
+# without downloading the artifact.
+_dump_session_error() {
+  local latest
+  latest="$(ls -1t "$SESSION_DIR"/*.jsonl 2>/dev/null | head -n1 || true)"
+  [[ -z "$latest" ]] && return
+
+  local err
+  err="$(grep '"stopReason":"error"' "$latest" | tail -1 | \
+    sed -n 's/.*"errorMessage":"\([^"]*\)".*/\1/p')"
+  if [[ -n "$err" ]]; then
+    echo "::warning::pi error: $err"
+  fi
+}
+
 while [[ $ATTEMPT -le $PI_MAX_RETRIES ]]; do
   if [[ $ATTEMPT -gt 0 ]]; then
     DELAY=$(( 5 * ATTEMPT ))
@@ -56,13 +73,36 @@ while [[ $ATTEMPT -le $PI_MAX_RETRIES ]]; do
   ATTEMPT=$(( ATTEMPT + 1 ))
 
   set +e
-  printf '%s' "$PI_PROMPT" | timeout "${PI_TIMEOUT_MINUTES}m" pi "${PI_ARGS[@]}"
-  EXIT_CODE=$?
+  printf '%s' "$PI_PROMPT" | timeout "${PI_TIMEOUT_MINUTES}m" pi "${PI_ARGS[@]}" | \
+    node -e '
+      const rl = require("readline").createInterface({ input: process.stdin });
+      rl.on("line", (line) => {
+        try {
+          const e = JSON.parse(line);
+          if (e.type !== "message") return;
+          const m = e.message;
+          if (m.role === "assistant") {
+            for (const c of m.content || []) {
+              if (c.type === "text" && c.text) console.log("[pi]", c.text.slice(0, 200));
+              if (c.type === "toolCall") console.log("[pi] >", c.name, JSON.stringify(c.arguments).slice(0, 150));
+            }
+            if (m.stopReason === "error") console.log("[pi] ERROR:", m.errorMessage || "unknown error");
+          } else if (m.role === "toolResult") {
+            const s = m.isError ? "ERR" : "ok";
+            console.log("[pi] <", m.toolName, "[" + s + "]");
+          }
+        } catch {}
+      });
+    '
+  # PIPESTATUS: [0]=printf [1]=timeout+pi [2]=node
+  EXIT_CODE=${PIPESTATUS[1]}
   set -e
 
   if [[ $EXIT_CODE -eq 0 ]]; then
     break
   fi
+
+  _dump_session_error
 done
 
 # shellcheck disable=SC2012
