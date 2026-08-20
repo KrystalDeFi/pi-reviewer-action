@@ -1,48 +1,48 @@
-name: 'Pi Reviewer'
-description: 'Run a pi-mono coding agent against a PR for review'
+name: "Pi Reviewer"
+description: "Run a pi-mono coding agent against a PR for review"
 branding:
-  icon: 'message-circle'
-  color: 'purple'
+  icon: "message-circle"
+  color: "purple"
 
 inputs:
   prompt:
-    description: 'Instructions for the model'
+    description: "Instructions for the model"
     required: true
   model:
-    description: 'Model ID (e.g. xiaomi/mimo-v2.5-pro). Supports provider/id syntax.'
+    description: "Model ID (e.g. xiaomi/mimo-v2.5-pro). Supports provider/id syntax."
     required: true
   provider:
-    description: 'Pi provider name (openrouter, anthropic, openai, ...)'
+    description: "Pi provider name (openrouter, anthropic, openai, ...)"
     required: false
-    default: 'openrouter'
+    default: "openrouter"
   thinking:
-    description: 'Thinking level: off, minimal, low, medium, high, xhigh'
+    description: "Thinking level: off, minimal, low, medium, high, xhigh"
     required: false
-    default: 'medium'
+    default: "medium"
   pi_version:
-    description: 'npm version of @mariozechner/pi-coding-agent to install'
+    description: "npm version of @mariozechner/pi-coding-agent to install"
     required: false
-    default: '0.70.5'
+    default: "0.73.1"
   github_token:
-    description: 'Token used for the gh CLI inside pi (defaults to github.token)'
+    description: "Token used for the gh CLI inside pi (defaults to github.token)"
     required: false
     default: ${{ github.token }}
   working_directory:
-    description: 'Where pi runs (defaults to github.workspace)'
+    description: "Where pi runs (defaults to github.workspace)"
     required: false
     default: ${{ github.workspace }}
   timeout_minutes:
-    description: 'Hard cap on the pi step in minutes'
+    description: "Hard cap on the pi step in minutes"
     required: false
-    default: '15'
+    default: "15"
   append_system_prompt:
-    description: 'Extra system instructions appended to pi defaults'
+    description: "Extra system instructions appended to pi defaults"
     required: false
-    default: ''
+    default: ""
   verbose:
-    description: 'Pass --verbose to pi to show startup and debug output'
+    description: "Pass --verbose to pi to show startup and debug output"
     required: false
-    default: 'false'
+    default: "false"
 
 outputs:
   exit_code:
@@ -58,7 +58,7 @@ runs:
     - name: Setup Node
       uses: actions/setup-node@v4
       with:
-        node-version: '24'
+        node-version: "24"
 
     - name: Cache pi install
       id: cache-pi
