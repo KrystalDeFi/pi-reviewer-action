@@ -43,10 +43,27 @@ echo "thinking: $PI_THINKING"
 echo "tools:    bash,read,grep,find,ls"
 echo "::endgroup::"
 
-set +e
-printf '%s' "$PI_PROMPT" | timeout "${PI_TIMEOUT_MINUTES}m" pi "${PI_ARGS[@]}"
-EXIT_CODE=$?
-set -e
+PI_MAX_RETRIES="${PI_MAX_RETRIES:-2}"
+ATTEMPT=0
+EXIT_CODE=1
+
+while [[ $ATTEMPT -le $PI_MAX_RETRIES ]]; do
+  if [[ $ATTEMPT -gt 0 ]]; then
+    DELAY=$(( 5 * ATTEMPT ))
+    echo "::warning::pi exited $EXIT_CODE on attempt $ATTEMPT — retrying in ${DELAY}s ($(( PI_MAX_RETRIES - ATTEMPT + 1 )) left)"
+    sleep "$DELAY"
+  fi
+  ATTEMPT=$(( ATTEMPT + 1 ))
+
+  set +e
+  printf '%s' "$PI_PROMPT" | timeout "${PI_TIMEOUT_MINUTES}m" pi "${PI_ARGS[@]}"
+  EXIT_CODE=$?
+  set -e
+
+  if [[ $EXIT_CODE -eq 0 ]]; then
+    break
+  fi
+done
 
 # shellcheck disable=SC2012
 LATEST_SESSION="$(ls -1t "$SESSION_DIR"/*.jsonl 2>/dev/null | head -n1 || true)"
