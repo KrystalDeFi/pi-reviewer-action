@@ -90,16 +90,18 @@ while [[ $ATTEMPT -le $PI_MAX_RETRIES ]]; do
       try {
         const e = JSON.parse(line);
         if (e.type !== "message") return;
+        const ts = e.timestamp ? e.timestamp.slice(11, 19) : new Date().toISOString().slice(11, 19);
         const m = e.message;
         if (m.role === "assistant") {
           for (const c of m.content || []) {
-            if (c.type === "text" && c.text) console.log("[pi]", c.text.slice(0, 200));
-            if (c.type === "toolCall") console.log("[pi] >", c.name, JSON.stringify(c.arguments).slice(0, 150));
+            if (c.type === "thinking" && c.thinking) console.log(ts, "[pi] think:", c.thinking.slice(0, 200));
+            if (c.type === "text" && c.text) console.log(ts, "[pi]", c.text.slice(0, 200));
+            if (c.type === "toolCall") console.log(ts, "[pi] >", c.name, JSON.stringify(c.arguments).slice(0, 150));
           }
-          if (m.stopReason === "error") console.log("[pi] ERROR:", m.errorMessage || "unknown error");
+          if (m.stopReason === "error") console.log(ts, "[pi] ERROR:", m.errorMessage || "unknown error");
         } else if (m.role === "toolResult") {
           const s = m.isError ? "ERR" : "ok";
-          console.log("[pi] <", m.toolName, "[" + s + "]");
+          console.log(ts, "[pi] <", m.toolName, "[" + s + "]");
         }
       } catch {}
     });
