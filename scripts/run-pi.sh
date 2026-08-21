@@ -16,7 +16,6 @@ mkdir -p "$SESSION_DIR"
 # shellcheck disable=SC2054
 PI_ARGS=(
   --print
-  --mode json
   --provider "$PI_PROVIDER"
   --model "$PI_MODEL"
   --thinking "$PI_THINKING"
@@ -72,31 +71,47 @@ while [[ $ATTEMPT -le $PI_MAX_RETRIES ]]; do
   fi
   ATTEMPT=$(( ATTEMPT + 1 ))
 
-  set +e
-  printf '%s' "$PI_PROMPT" | timeout "${PI_TIMEOUT_MINUTES}m" pi "${PI_ARGS[@]}" | \
-    node -e '
-      const rl = require("readline").createInterface({ input: process.stdin });
-      rl.on("line", (line) => {
-        try {
-          const e = JSON.parse(line);
-          if (e.type !== "message") return;
-          const m = e.message;
-          if (m.role === "assistant") {
-            for (const c of m.content || []) {
-              if (c.type === "text" && c.text) console.log("[pi]", c.text.slice(0, 200));
-              if (c.type === "toolCall") console.log("[pi] >", c.name, JSON.stringify(c.arguments).slice(0, 150));
-            }
-            if (m.stopReason === "error") console.log("[pi] ERROR:", m.errorMessage || "unknown error");
-          } else if (m.role === "toolResult") {
-            const s = m.isError ? "ERR" : "ok";
-            console.log("[pi] <", m.toolName, "[" + s + "]");
+  # Tail the session JSONL in the background so the runner log shows live
+  # progress instead of being silent for minutes. Wait for pi to create a
+  # NEW file (not one from a previous attempt), then tail -f into a single
+  # node process that formats each event.
+  PREV_SESSION="$(ls -1t "$SESSION_DIR"/*.jsonl 2>/dev/null | head -n1 || true)"
+  {
+    for _ in $(seq 1 30); do
+      SESSION_FILE="$(ls -1t "$SESSION_DIR"/*.jsonl 2>/dev/null | head -n1 || true)"
+      [[ -n "$SESSION_FILE" && "$SESSION_FILE" != "$PREV_SESSION" ]] && break
+      sleep 1
+    done
+    [[ -n "$SESSION_FILE" && "$SESSION_FILE" != "$PREV_SESSION" ]] && \
+      tail -n +1 -f "$SESSION_FILE" 2>/dev/null
+  } | node -e '
+    const rl = require("readline").createInterface({ input: process.stdin });
+    rl.on("line", (line) => {
+      try {
+        const e = JSON.parse(line);
+        if (e.type !== "message") return;
+        const m = e.message;
+        if (m.role === "assistant") {
+          for (const c of m.content || []) {
+            if (c.type === "text" && c.text) console.log("[pi]", c.text.slice(0, 200));
+            if (c.type === "toolCall") console.log("[pi] >", c.name, JSON.stringify(c.arguments).slice(0, 150));
           }
-        } catch {}
-      });
-    '
-  # PIPESTATUS: [0]=printf [1]=timeout+pi [2]=node
-  EXIT_CODE=${PIPESTATUS[1]}
+          if (m.stopReason === "error") console.log("[pi] ERROR:", m.errorMessage || "unknown error");
+        } else if (m.role === "toolResult") {
+          const s = m.isError ? "ERR" : "ok";
+          console.log("[pi] <", m.toolName, "[" + s + "]");
+        }
+      } catch {}
+    });
+  ' &
+  TAIL_PID=$!
+
+  set +e
+  printf '%s' "$PI_PROMPT" | timeout "${PI_TIMEOUT_MINUTES}m" pi "${PI_ARGS[@]}"
+  EXIT_CODE=$?
   set -e
+
+  kill "$TAIL_PID" 2>/dev/null; wait "$TAIL_PID" 2>/dev/null || true
 
   if [[ $EXIT_CODE -eq 0 ]]; then
     break
